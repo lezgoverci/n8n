@@ -1,17 +1,5 @@
 {
-  "name": "Instagram post from image URL",
   "nodes": [
-    {
-      "parameters": {},
-      "id": "4c2f71f1-44a6-4c1d-8d8b-2d3be05a7f91",
-      "name": "Manual Trigger",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [
-        200,
-        300
-      ]
-    },
     {
       "parameters": {
         "assignments": {
@@ -19,43 +7,87 @@
             {
               "id": "e1c3a8c2-5d8f-4c42-9a4a-7a6bb4c4d42a",
               "name": "igUserId",
-              "value": "YOUR_IG_USER_ID",
+              "value": "={{ $json.body.igUserId }}",
               "type": "string"
             },
             {
               "id": "2c9e6d4a-5c1a-4f31-8b85-3e1b3d2d1f5a",
               "name": "imageUrl",
-              "value": "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=1200",
+              "value": "={{ $json.body.imageUrl }}",
               "type": "string"
             },
             {
               "id": "d6a5f2c1-3a4b-4e5f-8a6d-7c8b9a0d1e2f",
               "name": "caption",
-              "value": "Hello from n8n! #automation",
+              "value": "={{ $json.body.caption }}",
               "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "7f4f3a9b-7d7c-4e2f-9d1e-1a2b3c4d5e6f",
+      "id": "0cca4c41-91f9-4a27-af9e-d5af82cb384b",
       "name": "Set Params",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.3,
       "position": [
-        480,
-        300
+        2704,
+        592
       ]
     },
     {
       "parameters": {
-        "hostUrl": "graph.facebook.com",
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "38880dee-202c-41b5-81b4-809e8966654c",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        3264,
+        592
+      ],
+      "webhookId": "bba86d76-a817-4184-9a60-b8e43020dc95"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "={{ $('Set Params').item.json.igUserId }}",
+        "edge": "media_publish",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $('Create Media Container1').item.json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c3039cdf-4d83-4fe2-95c6-b9cd255330a5",
+      "name": "Publish Media",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        3536,
+        592
+      ],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "cef0AIoNeNXMJo71",
+          "name": "Xponent"
+        }
+      }
+    },
+    {
+      "parameters": {
         "httpRequestMethod": "POST",
         "graphApiVersion": "v23.0",
         "node": "={{ $('Set Params').item.json.igUserId }}",
         "edge": "media",
-        "allowUnauthorizedCerts": false,
-        "sendBinaryData": false,
         "options": {
           "queryParameters": {
             "parameter": [
@@ -71,88 +103,43 @@
           }
         }
       },
-      "id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
-      "name": "Create Media Container",
+      "id": "103484dd-fa84-4bd5-a88f-7716ed7232c3",
+      "name": "Create Media Container1",
       "type": "n8n-nodes-base.facebookGraphApi",
       "typeVersion": 1,
       "position": [
-        780,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "amount": 5,
-        "unit": "seconds"
-      },
-      "id": "9f8e7d6c-5b4a-3a2b-1c0d-9e8f7d6c5b4a",
-      "name": "Wait",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1,
-      "position": [
-        1040,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "hostUrl": "graph.facebook.com",
-        "httpRequestMethod": "POST",
-        "graphApiVersion": "v23.0",
-        "node": "={{ $('Set Params').item.json.igUserId }}",
-        "edge": "media_publish",
-        "allowUnauthorizedCerts": false,
-        "sendBinaryData": false,
-        "options": {
-          "queryParameters": {
-            "parameter": [
-              {
-                "name": "creation_id",
-                "value": "={{ $('Create Media Container').item.json.id }}"
-              }
-            ]
-          }
+        3008,
+        592
+      ],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "cef0AIoNeNXMJo71",
+          "name": "Xponent"
         }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instagram-post",
+        "options": {}
       },
-      "id": "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
-      "name": "Publish Media",
-      "type": "n8n-nodes-base.facebookGraphApi",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [
-        1310,
-        300
-      ]
+        2400,
+        592
+      ],
+      "id": "64cc5ab2-e687-4d63-b98c-511655e53b87",
+      "name": "Webhook"
     }
   ],
-  "pinData": {},
   "connections": {
-    "Manual Trigger": {
-      "main": [
-        [
-          {
-            "node": "Set Params",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Set Params": {
       "main": [
         [
           {
-            "node": "Create Media Container",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create Media Container": {
-      "main": [
-        [
-          {
-            "node": "Wait",
+            "node": "Create Media Container1",
             "type": "main",
             "index": 0
           }
@@ -169,11 +156,33 @@
           }
         ]
       ]
+    },
+    "Create Media Container1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "tags": []
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "746ee0cbe95e29ade6e99da0ff3b10dfc1d8a9448b58c520329d0a768b851324"
+  }
 }
