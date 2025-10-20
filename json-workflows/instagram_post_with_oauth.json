@@ -1,0 +1,233 @@
+{
+  "name": "Instagram Post with OAuth Integration",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "4c2f71f1-44a6-4c1d-8d8b-2d3be05a7f91",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "credentials-source",
+              "name": "credentialsSource",
+              "value": "oauth",
+              "type": "string"
+            },
+            {
+              "id": "ig-user-id",
+              "name": "igUserId",
+              "value": "={{ $vars.INSTAGRAM_USER_ID || 'YOUR_IG_USER_ID' }}",
+              "type": "string"
+            },
+            {
+              "id": "access-token",
+              "name": "accessToken",
+              "value": "={{ $vars.INSTAGRAM_ACCESS_TOKEN || 'YOUR_ACCESS_TOKEN' }}",
+              "type": "string"
+            },
+            {
+              "id": "image-url",
+              "name": "imageUrl",
+              "value": "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=1200",
+              "type": "string"
+            },
+            {
+              "id": "caption",
+              "name": "caption",
+              "value": "Hello from n8n! #automation #instagram",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7f4f3a9b-7d7c-4e2f-9d1e-1a2b3c4d5e6f",
+      "name": "Set Post Parameters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v23.0/{{ $json.igUserId }}/media",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.imageUrl }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $json.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+      "name": "Create Media Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "9f8e7d6c-5b4a-3a2b-1c0d-9e8f7d6c5b4a",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v23.0/{{ $json.igUserId }}/media_publish",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $node['Create Media Container'].json.id }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $json.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+      "name": "Publish Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1310,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success-message",
+              "name": "successMessage",
+              "value": "Instagram post published successfully!",
+              "type": "string"
+            },
+            {
+              "id": "post-id",
+              "name": "postId",
+              "value": "={{ $node['Publish Media'].json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "post-url",
+              "name": "postUrl",
+              "value": "https://www.instagram.com/p/{{ $node['Publish Media'].json.id }}/",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "success-notification-1",
+      "name": "Success Notification",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1580,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Post Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Post Parameters": {
+      "main": [
+        [
+          {
+            "node": "Create Media Container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Media Container": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Publish Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Media": {
+      "main": [
+        [
+          {
+            "node": "Success Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["instagram", "social-media", "oauth", "posting"]
+}

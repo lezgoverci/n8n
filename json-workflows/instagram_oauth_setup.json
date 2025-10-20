@@ -1,0 +1,497 @@
+{
+  "name": "Instagram OAuth Setup",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "none",
+        "formTitle": "Instagram API Authentication Setup",
+        "formDescription": "Configure your Instagram Business Account for posting content via n8n workflow",
+        "formFields": {
+          "formFieldValues": [
+            {
+              "fieldLabel": "Facebook App ID",
+              "fieldType": "text",
+              "requiredField": true,
+              "fieldOptions": {
+                "placeholder": "Your Facebook App ID"
+              }
+            },
+            {
+              "fieldLabel": "Facebook App Secret",
+              "fieldType": "password",
+              "requiredField": true,
+              "fieldOptions": {
+                "placeholder": "Your Facebook App Secret"
+              }
+            },
+            {
+              "fieldLabel": "Redirect URI",
+              "fieldType": "text",
+              "requiredField": true,
+              "fieldOptions": {
+                "placeholder": "https://your-domain.com/oauth/callback",
+                "defaultValue": "https://n8n.io/oauth/callback"
+              }
+            },
+            {
+              "fieldLabel": "Authentication Scope",
+              "fieldType": "text",
+              "requiredField": true,
+              "fieldOptions": {
+                "placeholder": "instagram_basic,instagram_content_publish,pages_show_list",
+                "defaultValue": "instagram_basic,instagram_content_publish,pages_show_list"
+              }
+            }
+          ]
+        },
+        "options": {
+          "buttonLabel": "Start Instagram Authentication"
+        },
+        "responseMode": "responseNode"
+      },
+      "id": "form-trigger-1",
+      "name": "Instagram Auth Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "app-id",
+              "name": "appId",
+              "value": "={{ $json.body['Facebook App ID'] }}",
+              "type": "string"
+            },
+            {
+              "id": "app-secret",
+              "name": "appSecret", 
+              "value": "={{ $json.body['Facebook App Secret'] }}",
+              "type": "string"
+            },
+            {
+              "id": "redirect-uri",
+              "name": "redirectUri",
+              "value": "={{ $json.body['Redirect URI'] }}",
+              "type": "string"
+            },
+            {
+              "id": "scope",
+              "name": "scope",
+              "value": "={{ $json.body['Authentication Scope'] }}",
+              "type": "string"
+            },
+            {
+              "id": "state",
+              "name": "state",
+              "value": "={{ $now.format('x') }}-{{ $randomString(16) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-params-1",
+      "name": "Set OAuth Parameters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.facebook.com/v23.0/dialog/oauth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "={{ $json.appId }}"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "={{ $json.redirectUri }}"
+            },
+            {
+              "name": "scope",
+              "value": "={{ $json.scope }}"
+            },
+            {
+              "name": "response_type",
+              "value": "code"
+            },
+            {
+              "name": "state",
+              "value": "={{ $json.state }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-auth-url-1",
+      "name": "Generate Auth URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"authorizationUrl\": $node[\"Generate Auth URL\"].json.uri, \"state\": $json.state, \"redirectUri\": $json.redirectUri } }}"
+      },
+      "id": "respond-auth-url-1",
+      "name": "Return Auth URL",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "oauth/callback",
+        "responseMode": "responseNode"
+      },
+      "id": "oauth-callback-trigger-1",
+      "name": "OAuth Callback Handler",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "auth-code",
+              "name": "authCode",
+              "value": "={{ $query.code }}",
+              "type": "string"
+            },
+            {
+              "id": "callback-state",
+              "name": "callbackState", 
+              "value": "={{ $query.state }}",
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "name": "error",
+              "value": "={{ $query.error }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-callback-1",
+      "name": "Extract Callback Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        480,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "error-check",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-error-1",
+      "name": "Check for Errors",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v23.0/oauth/access_token",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "={{ $node[\"Set OAuth Parameters\"].json.appId }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $node[\"Set OAuth Parameters\"].json.appSecret }}"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "={{ $node[\"Set OAuth Parameters\"].json.redirectUri }}"
+            },
+            {
+              "name": "code",
+              "value": "={{ $json.authCode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "exchange-token-1",
+      "name": "Exchange Auth Code",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1040,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "hostUrl": "graph.facebook.com",
+        "httpRequestMethod": "GET",
+        "graphApiVersion": "v23.0",
+        "node": "me",
+        "edge": "accounts",
+        "allowUnauthorizedCerts": false,
+        "sendBinaryData": false,
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "instagram_business_account{id,username,name}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "get-ig-accounts-1",
+      "name": "Get Instagram Accounts",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "access-token",
+              "name": "accessToken",
+              "value": "={{ $node[\"Exchange Auth Code\"].json.access_token }}",
+              "type": "string"
+            },
+            {
+              "id": "ig-user-id",
+              "name": "igUserId",
+              "value": "={{ $json.data[0].instagram_business_account.id }}",
+              "type": "string"
+            },
+            {
+              "id": "ig-username",
+              "name": "igUsername",
+              "value": "={{ $json.data[0].instagram_business_account.username }}",
+              "type": "string"
+            },
+            {
+              "id": "expires-in",
+              "name": "expiresIn",
+              "value": "={{ $node[\"Exchange Auth Code\"].json.expires_in }}",
+              "type": "number"
+            },
+            {
+              "id": "token-type",
+              "name": "tokenType",
+              "value": "={{ $node[\"Exchange Auth Code\"].json.token_type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-credentials-1",
+      "name": "Set Credentials Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1600,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Instagram authentication successful!\", \"credentials\": { \"igUserId\": $json.igUserId, \"igUsername\": $json.igUsername, \"expiresIn\": $json.expiresIn }, \"nextSteps\": \"You can now use the Instagram posting workflow with your authenticated account.\" } }}"
+      },
+      "id": "success-response-1",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1880,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": false, \"error\": $json.error || \"Authentication failed\", \"message\": \"Instagram authentication failed. Please try again.\" } }}"
+      },
+      "id": "error-response-1",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        700
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Instagram Auth Form": {
+      "main": [
+        [
+          {
+            "node": "Set OAuth Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set OAuth Parameters": {
+      "main": [
+        [
+          {
+            "node": "Generate Auth URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Auth URL": {
+      "main": [
+        [
+          {
+            "node": "Return Auth URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OAuth Callback Handler": {
+      "main": [
+        [
+          {
+            "node": "Extract Callback Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Callback Data": {
+      "main": [
+        [
+          {
+            "node": "Check for Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Errors": {
+      "main": [
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exchange Auth Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange Auth Code": {
+      "main": [
+        [
+          {
+            "node": "Get Instagram Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Instagram Accounts": {
+      "main": [
+        [
+          {
+            "node": "Set Credentials Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Credentials Data": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["instagram", "oauth", "authentication", "social-media"]
+}
